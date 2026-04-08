@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotHost - Discord Bot Hosting Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#5865F2',
+                        secondary: '#EB459E',
+                        dark: '#0a0a0f',
+                        darker: '#050508',
+                        card: '#13131f',
+                        border: '#2a2a3e',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #13131f 50%, #0a0a0f 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(19, 19, 31, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(42, 42, 62, 0.5);
+        }
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(88, 101, 242, 0.3), 0 0 40px rgba(88, 101, 242, 0.1);
+        }
+        .status-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .code-editor {
+            background: #0d0d12;
+            border: 1px solid #2a2a3e;
+        }
+        .line-numbers {
+            color: #4a4a5e;
+            user-select: none;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #5865F2 0%, #EB459E 100%);
+        }
+        .server-card {
+            transition: all 0.3s ease;
+        }
+        .server-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(88, 101, 242, 0.2);
+        }
+        .tab-active {
+            border-bottom: 2px solid #5865F2;
+            color: #5865F2;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a3e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3a3a4e;
+        }
+        .terminal {
+            background: #050508;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .terminal-line {
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+        }
+        .terminal-line:hover {
+            border-left-color: #5865F2;
+            background: rgba(88, 101, 242, 0.05);
+        }
+    </style>
+</head>
+<body class="text-gray-300 font-sans antialiased">
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 glass z-50 hidden md:flex flex-col">
+        <div class="p-6 border-b border-border">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center neon-glow">
+                    <i class="fa-solid fa-robot text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-bold text-lg">BotHost</h1>
+                    <p class="text-xs text-gray-500">v2.4.0</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <i class="fa-solid fa-server"></i>
+                <span class="font-medium">My Bots</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-coins"></i>
+                <span>Economy</span>
+                <span class="ml-auto text-xs bg-secondary/20 text-secondary px-2 py-1 rounded">1,250</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-shop"></i>
+                <span>Marketplace</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-database"></i>
+                <span>Databases</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Backups</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-border">
+            <div class="glass rounded-lg p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-10 h-10 rounded-full bg-card">
+                    <div>
+                        <p class="text-white font-medium text-sm">dev_user</p>
+                        <p class="text-xs text-gray-500">Free Plan</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-500">RAM Usage</span>
+                        <span class="text-white">512MB / 1GB</span>
+                    </div>
+                    <div class="w-full bg-dark rounded-full h-2">
+                        <div class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full" style="width: 51%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-40 border-b border-border">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4">
+                    <button class="md:hidden text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <h2 class="text-xl font-semibold text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="relative p-2 text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full status-dot"></span>
+                    </button>
+                    <button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden sm:inline">New Bot</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-6 space-y-6">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm">Active Bots</span>
+                        <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-check text-green-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white">3<span class="text-gray-500 text-sm font-normal">/5</span></p>
+                    <p class="text-xs text-green-400 mt-1"><i class="fa-solid fa-arrow-up mr-1"></i>2 running</p>
+                </div>
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm">Total RAM</span>
+                        <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <i class="fa-solid fa-memory text-primary text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white">1.2<span class="text-gray-500 text-sm font-normal">GB</span></p>
+                    <p class="text-xs text-gray-400 mt-1">of 2GB allocated</p>
+                </div>
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm">CPU Usage</span>
+                        <div class="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center">
+                            <i class="fa-solid fa-microchip text-secondary text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white">12<span class="text-gray-500 text-sm font-normal">%</span></p>
+                    <p class="text-xs text-gray-400 mt-1">Average across bots</p>
+                </div>
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm">Network</span>
+                        <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-network-wired text-orange-400 text-sm"></i>
+                        </div>
+                    </div>
+                    <p class="text-2xl font-bold text-white">45<span class="text-gray-500 text-sm font-normal">MB</span></p>
+                    <p class="text-xs text-gray-400 mt-1">Transferred today</p>
+                </div>
+            </div>
+
+            <!-- Bot Cards Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Bot Card 1 - Running -->
+                <div class="server-card glass rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-border">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=MusicBot" class="w-12 h-12 rounded-xl bg-card">
+                                    <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-card status-dot"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-semibold">MusicMaster</h3>
+                                    <p class="text-xs text-gray-500">discord.js v14</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-red-400 transition-colors">
+                                    <i class="fa-solid fa-power-off"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">Online</span>
+                            <span class="px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20">Auto-restart</span>
+                            <span class="text-gray-500">Uptime: 3d 14h</span>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">RAM Usage</span>
+                                <span class="text-white">245MB / 512MB</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="progress-bar h-2 rounded-full" style="width: 48%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">CPU</span>
+                                <span class="text-white">8%</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="bg-secondary h-2 rounded-full" style="width: 8%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-border">
+                            <span class="text-xs text-gray-500">Last deployed: 2 hours ago</span>
+                            <button onclick="openEditor('MusicMaster')" class="text-xs text-primary hover:text-white transition-colors font-medium">
+                                Open Editor →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Card 2 - Stopped -->
+                <div class="server-card glass rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-border">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=ModBot" class="w-12 h-12 rounded-xl bg-card opacity-50">
+                                    <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-card"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-semibold">ModGuard</h3>
+                                    <p class="text-xs text-gray-500">discord.py 2.3</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <button class="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20">Offline</span>
+                            <span class="px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20">Auto-restart</span>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">RAM Usage</span>
+                                <span class="text-gray-500">0MB / 512MB</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="h-2 rounded-full bg-gray-700" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">CPU</span>
+                                <span class="text-gray-500">0%</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="h-2 rounded-full bg-gray-700" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-border">
+                            <span class="text-xs text-gray-500">Stopped: 5 hours ago</span>
+                            <button onclick="openEditor('ModGuard')" class="text-xs text-primary hover:text-white transition-colors font-medium">
+                                Open Editor →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Card 3 - Warning -->
+                <div class="server-card glass rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-border">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=GameBot" class="w-12 h-12 rounded-xl bg-card">
+                                    <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full border-2 border-card status-dot"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-semibold">GameStats</h3>
+                                    <p class="text-xs text-gray-500">Node.js 18</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <button class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-red-400 transition-colors">
+                                    <i class="fa-solid fa-power-off"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">High RAM</span>
+                            <span class="px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20">Auto-restart</span>
+                            <span class="text-gray-500">Uptime: 12h</span>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">RAM Usage</span>
+                                <span class="text-yellow-400">892MB / 1GB</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 87%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">CPU</span>
+                                <span class="text-white">34%</span>
+                            </div>
+                            <div class="w-full bg-dark rounded-full h-2">
+                                <div class="bg-secondary h-2 rounded-full" style="width: 34%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-border">
+                            <span class="text-xs text-gray-500">Last deployed: 1 day ago</span>
+                            <button onclick="openEditor('GameStats')" class="text-xs text-primary hover:text-white transition-colors font-medium">
+                                Open Editor →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Console -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Activity Log -->
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-white font-semibold">Recent Activity</h3>
+                        <button class="text-xs text-primary hover:text-white">View All</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-play text-green-400 text-xs"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-white">MusicMaster started</p>
+                                <p class="text-xs text-gray-500">2 hours ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                            <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <i class="fa-solid fa-code text-primary text-xs"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-white">Deployed new version</p>
+                                <p class="text-xs text-gray-500">GameStats • 5 hours ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                            <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation text-red-400 text-xs"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-white">High RAM usage alert</p>
+                                <p class="text-xs text-gray-500">GameStats • 6 hours ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                            <div class="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center">
+                                <i class="fa-solid fa-rotate text-secondary text-xs"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-white">Auto-restart triggered</p>
+                                <p class="text-xs text-gray-500">ModGuard • 1 day ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Console -->
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-white font-semibold">Live Console</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-green-500 rounded-full status-dot"></span>
+                            <span class="text-xs text-gray-400">MusicMaster</span>
+                        </div>
+                    </div>
+                    <div class="terminal rounded-lg p-4 h-48 overflow-y-auto text-xs space-y-1">
+                        <div class="terminal-line text-green-400">[2026-04-08 22:45:12] Bot started successfully</div>
+                        <div class="terminal-line text-gray-400">[2026-04-08 22:45:13] Connected to Discord Gateway</div>
+                        <div class="terminal-line text-gray-400">[2026-04-08 22:45:13] Loaded 12 commands</div>
+                        <div class="terminal-line text-blue-400">[2026-04-08 22:46:45] User @john_doe executed /play</div>
+                        <div class="terminal-line text-gray-400">[2026-04-08 22:46:46] Joining voice channel: General</div>
+                        <div class="terminal-line text-yellow-400">[2026-04-08 22:47:12] Warning: High memory usage detected</div>
+                        <div class="terminal-line text-gray-400">[2026-04-08 22:47:30] Garbage collection completed</div>
+                        <div class="terminal-line text-blue-400">[2026-04-08 22:48:15] User @sarah executed /queue</div>
+                        <div class="terminal-line text-gray-400">[2026-04-08 22:48:16] Queue length: 5 tracks</div>
+                        <div class="terminal-line text-green-400">[2026-04-08 22:50:00] Auto-save completed</div>
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <input type="text" placeholder="Enter command..." class="flex-1 bg-dark border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary">
+                        <button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Code Editor Modal -->
+    <div id="editorModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeEditor()"></div>
+        <div class="absolute inset-4 md:inset-10 glass rounded-xl flex flex-col overflow-hidden">
+            <!-- Editor Header -->
+            <div class="flex items-center justify-between p-4 border-b border-border">
+                <div class="flex items-center gap-4">
+                    <h3 id="editorTitle" class="text-white font-semibold">index.js</h3>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 rounded bg-primary/20 text-primary text-xs border border-primary/30">index.js</button>
+                        <button class="px-3 py-1 rounded bg-white/5 text-gray-400 text-xs hover:bg-white/10">config.json</button>
+                        <button class="px-3 py-1 rounded bg-white/5 text-gray-400 text-xs hover:bg-white/10">package.json</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-sm transition-colors">
+                        <i class="fa-solid fa-rotate-left mr-2"></i>Reset
+                    </button>
+                    <button class="px-4 py-2 rounded-lg bg-primary hover:bg-primary/80 text-white text-sm transition-colors">
+                        <i class="fa-solid fa-save mr-2"></i>Save & Deploy
+                    </button>
+                    <button onclick="closeEditor()" class="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor Body -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- File Explorer -->
+                <div class="w-64 border-r border-border p-4 hidden md:block">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-gray-500 uppercase">Files</span>
+                        <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex items-center gap-2 p-2 rounded bg-primary/10 text-primary">
+                            <i class="fa-brands fa-js text-yellow-400"></i>
+                            <span>index.js</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer">
+                            <i class="fa-brands fa-node text-green-400"></i>
+                            <span>package.json</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer">
+                            <i class="fa-solid fa-gear text-gray-400"></i>
+                            <span>config.json</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer">
+                            <i class="fa-solid fa-folder text-yellow-600"></i>
+                            <span>commands/</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer pl-8">
+                            <i class="fa-brands fa-js text-yellow-400"></i>
+                            <span>play.js</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer pl-8">
+                            <i class="fa-brands fa-js text-yellow-400"></i>
+                            <span>queue.js</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 text-gray-400 cursor-pointer">
+                            <i class="fa-solid fa-folder text-yellow-600"></i>
+                            <span>events/</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Area -->
+                <div class="flex-1 flex flex-col">
+                    <div class="flex-1 flex overflow-hidden">
+                        <div class="w-12 bg-dark border-r border-border py-4 text-right pr-3 text-sm font-mono text-gray-600 select-none">
+                            <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div>
+                            <div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div>
+                        </div>
+                        <textarea class="flex-1 bg-transparent p-4 text-sm font-mono text-gray-300 resize-none focus:outline-none" spellcheck="false">const { Client, GatewayIntentBits } = require('discord.js');
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates
+  ]
+});
+
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}!`);
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === 'ping') {
+    await interaction.reply('Pong!');
+  }
+});
+
+client.login(process.env.TOKEN);</textarea>
+                    </div>
+
+                    <!-- Terminal Bottom -->
+                    <div class="h-48 border-t border-border flex flex-col">
+                        <div class="flex items-center gap-4 px-4 py-2 border-b border-border bg-dark">
+                            <button class="text-xs text-primary border-b-2 border-primary pb-2">Terminal</button>
+                            <button class="text-xs text-gray-500 hover:text-gray-300 pb-2">Output</button>
+                            <button class="text-xs text-gray-500 hover:text-gray-300 pb-2">Problems</button>
+                        </div>
+                        <div class="flex-1 terminal p-3 text-xs font-mono overflow-y-auto">
+                            <div class="text-green-400">$ npm install</div>
+                            <div class="text-gray-400">added 45 packages in 2s</div>
+                            <div class="text-green-400 mt-2">$ node index.js</div>
+                            <div class="text-gray-400">Logged in as MusicMaster#1234!</div>
+                            <div class="text-gray-400">Ready on 3 servers</div>
+                            <div class="text-blue-400 mt-2">$ _</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openEditor(botName) {
+            document.getElementById('editorModal').classList.remove('hidden');
+            document.getElementById('editorTitle').textContent = botName + ' - index.js';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditor() {
+            document.getElementById('editorModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Simulate live console updates
+        setInterval(() => {
+            const consoleDiv = document.querySelector('.terminal');
+            if (consoleDiv && !document.getElementById('editorModal').classList.contains('hidden')) {
+                // Only update if editor is open
+            }
+        }, 5000);
+
+        // Add typing effect to terminal
+        const terminalLines = [
+            '[2026-04-08 22:51:23] User @mike executed /skip',
+            '[2026-04-08 22:51:24] Skipping current track',
+            '[2026-04-08 22:52:01] New track started: "Never Gonna Give You Up"',
+            '[2026-04-08 22:52:45] User @emma joined voice channel',
+        ];
+
+        let lineIndex = 0;
+        setInterval(() => {
+            const terminals = document.querySelectorAll('.terminal');
+            terminals.forEach(term => {
+                if (lineIndex < terminalLines.length && Math.random() > 0.7) {
+                    const div = document.createElement('div');
+                    div.className = 'terminal-line text-blue-400';
+                    div.textContent = terminalLines[lineIndex];
+                    term.appendChild(div);
+                    term.scrollTop = term.scrollHeight;
+                    lineIndex = (lineIndex + 1) % terminalLines.length;
+                }
+            });
+        }, 8000);
+    </script>
+</body>
+</html>
